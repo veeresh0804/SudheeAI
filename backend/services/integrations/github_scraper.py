@@ -1,6 +1,7 @@
 import logging
 import asyncio
 import aiohttp
+import os
 from typing import Dict, Optional, List
 from datetime import datetime
 from .platform_interface import PlatformScraper
@@ -21,10 +22,21 @@ class GitHubScraper(PlatformScraper):
     def __init__(self, timeout: int = 5):
         super().__init__(timeout)
         self.api_base = "https://api.github.com"
+        
+        # Get GitHub token from environment for authenticated requests
+        github_token = os.getenv("GITHUB_TOKEN")
+        
         self.headers = {
             "Accept": "application/vnd.github.v3+json",
-            "User-Agent": "SkillScout-Intelligence/1.0"
+            "User-Agent": "SudheeAI-Intelligence/1.0"
         }
+        
+        # Add authentication if token is available
+        if github_token:
+            self.headers["Authorization"] = f"token {github_token}"
+            logger.info("GitHub scraper initialized with authentication token")
+        else:
+            logger.warning("GitHub scraper initialized without token - rate limits apply (60/hour)")
     
     async def fetch(self, username: str) -> Optional[Dict]:
         """Fetch GitHub user data via API."""
