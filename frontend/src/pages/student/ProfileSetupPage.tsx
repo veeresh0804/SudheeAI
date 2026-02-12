@@ -238,7 +238,7 @@ const ProfileSetupPage: React.FC = () => {
 
   const canProceed = () => {
     switch (currentStep) {
-      case 1: return leetcode.status === 'verified';
+      case 1: return true; // LeetCode is now optional
       case 2: return github.status === 'verified';
       case 3: return true;
       case 4: return true;
@@ -298,9 +298,9 @@ const ProfileSetupPage: React.FC = () => {
             <>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Code2 className="w-5 h-5 text-leetcode" /> Link Your LeetCode Profile
+                  <Code2 className="w-5 h-5 text-leetcode" /> Link Your LeetCode Profile (Optional)
                 </CardTitle>
-                <CardDescription>We'll extract your problem-solving stats</CardDescription>
+                <CardDescription>We'll try to extract your stats, but you can skip this step if it fails</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -311,9 +311,12 @@ const ProfileSetupPage: React.FC = () => {
                     {renderVerificationButton(leetcode, verifyLeetCode)}
                   </div>
                   {leetcode.status === 'error' && (
-                    <p className="text-sm text-destructive flex items-center gap-1">
-                      <AlertCircle className="w-4 h-4" /> {leetcode.error}
-                    </p>
+                    <div className="space-y-2">
+                      <p className="text-sm text-destructive flex items-center gap-1">
+                        <AlertCircle className="w-4 h-4" /> {leetcode.error}
+                      </p>
+                      <p className="text-sm text-muted-foreground">LeetCode extraction is temporarily unavailable. You can skip this step.</p>
+                    </div>
                   )}
                 </div>
                 {leetcode.status === 'verified' && leetcode.data && (
