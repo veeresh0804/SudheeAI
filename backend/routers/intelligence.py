@@ -1,5 +1,6 @@
 import os
 import logging
+from typing import Optional
 from fastapi import APIRouter, Request, Depends
 from slowapi import Limiter
 from slowapi.util import get_remote_address
