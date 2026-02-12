@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+slowapi
+pydantic
+pydantic-settings
+python-multipart
+google-generativeai
+supabase
+python-dotenv
+json-logging
+aiohttp

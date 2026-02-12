@@ -1,0 +1,7 @@
+project_id = "xvbtwzxobckasatakeff"
+
+[functions.analyze-profile]
+verify_jwt = false
+
+[functions.intelligence-engine]
+verify_jwt = false
