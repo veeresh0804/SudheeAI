@@ -39,27 +39,49 @@ class LeetCodeScraper(PlatformScraper):
             # Construct the LeetCode profile URL
             leetcode_url = f"https://leetcode.com/u/{username}/"
             
-            logger.info(f"Analyzing LeetCode profile with Gemini: {leetcode_url}")
+            logger.info(f"Fetching LeetCode HTML for: {leetcode_url}")
             
-            # Gemini prompt for analyzing LeetCode profile
+            # First, fetch the HTML content
+            import aiohttp
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            }
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.get(leetcode_url, headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as resp:
+                    if resp.status != 200:
+                        logger.warning(f"Failed to fetch LeetCode profile page: {resp.status}")
+                        return None
+                    
+                    html_content = await resp.text()
+                    logger.info(f"Successfully fetched LeetCode HTML ({len(html_content)} chars)")
+            
+            # Now use Gemini to analyze the HTML
+            logger.info(f"Analyzing LeetCode HTML with Gemini for: {username}")
+            
             prompt = f"""
-Analyze this LeetCode profile: {leetcode_url}
+Analyze this LeetCode profile HTML and extract statistics.
 
-Extract the following information from the public profile page:
+Username: {username}
+Profile URL: {leetcode_url}
+
+HTML Content (first 15000 chars):
+{html_content[:15000]}
+
+Extract the following information from the HTML:
 1. Username
 2. Total problems solved
 3. Easy problems solved
 4. Medium problems solved  
 5. Hard problems solved
-6. Contest rating (if available)
-7. Global ranking (if available)
-8. Badges or achievements
-9. Recent activity/submission trends
-10. Any other notable stats
+6. Contest rating (if visible)
+7. Global ranking (if visible)
+8. Any badges or achievements
+9. Recent activity patterns
 
-Return ONLY a JSON object with this exact structure (no markdown, no code blocks):
+Return ONLY a valid JSON object with this exact structure (no markdown formatting):
 {{
-    "username": "username",
+    "username": "username_here",
     "total_solved": 0,
     "easy_solved": 0,
     "medium_solved": 0,
@@ -67,16 +89,12 @@ Return ONLY a JSON object with this exact structure (no markdown, no code blocks
     "contest_rating": 0,
     "ranking": 0,
     "badges": [],
-    "recent_activity": "description of recent activity",
-    "skills": [],
-    "analysis": "Brief analysis of the user's coding profile and strengths"
+    "recent_activity": "brief description",
+    "skills": ["skill1", "skill2"],
+    "analysis": "Brief 2-sentence analysis of coding profile and strengths based on the stats"
 }}
 
-If you cannot access the profile or it's not public, return:
-{{
-    "error": "Unable to access profile",
-    "reason": "explanation"
-}}
+If you cannot find the data in the HTML, use 0 for numeric fields and empty arrays/strings for others, but still return valid JSON.
 """
             
             # Call Gemini API
@@ -91,24 +109,19 @@ If you cannot access the profile or it's not public, return:
             
             # Parse Gemini's JSON response
             response_text = response.text.strip()
+            logger.debug(f"Gemini response: {response_text[:500]}")
             
             # Remove markdown code blocks if present
             if response_text.startswith("```"):
-                # Extract JSON from markdown code block
                 lines = response_text.split("\n")
-                response_text = "\n".join(lines[1:-1])  # Remove first and last line (```)
+                response_text = "\n".join(lines[1:-1])
                 if response_text.startswith("json"):
-                    response_text = response_text[4:]  # Remove "json" prefix
+                    response_text = response_text[4:].strip()
             
             data = json.loads(response_text)
             
-            # Check for error
-            if "error" in data:
-                logger.warning(f"Gemini reported error for LeetCode profile {username}: {data.get('reason')}")
-                return None
-            
-            logger.info(f"Successfully analyzed LeetCode profile for {username} using Gemini")
-            logger.debug(f"LeetCode data: {data}")
+            logger.info(f"Successfully analyzed LeetCode profile for {username}")
+            logger.debug(f"Extracted data: {data}")
             
             return {
                 "gemini_analysis": True,
@@ -116,9 +129,12 @@ If you cannot access the profile or it's not public, return:
                 **data
             }
         
+        except aiohttp.ClientError as e:
+            logger.error(f"Failed to fetch LeetCode HTML for {username}: {str(e)}")
+            return None
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse Gemini JSON response for {username}: {str(e)}")
-            logger.debug(f"Raw response: {response.text if response else 'None'}")
+            logger.debug(f"Raw response: {response.text if 'response' in locals() else 'None'}")
             return None
         except Exception as e:
             logger.error(f"LeetCode Gemini analysis error for {username}: {str(e)}", exc_info=True)
