@@ -25,6 +25,13 @@ class LeetCodeScraper(PlatformScraper):
     async def fetch(self, username: str) -> Optional[Dict]:
         """Fetch LeetCode user data via GraphQL API."""
         try:
+            # Extract username from URL if provided
+            if "/" in username:
+                # Handle URLs like https://leetcode.com/u/eGlfvtK4Pg/ or https://leetcode.com/eGlfvtK4Pg/
+                parts = username.rstrip("/").split("/")
+                username = parts[-1]  # Get the last part which should be the username
+                logger.info(f"Extracted username from URL: {username}")
+            
             query = """
             query userProfile($username: String!) {
                 matchedUser(username: $username) {
@@ -51,32 +58,47 @@ class LeetCodeScraper(PlatformScraper):
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 "Referer": "https://leetcode.com/",
-                "Content-Type": "application/json"
+               "Content-Type": "application/json",
+                "Accept": "application/json"
             }
+            
+            logger.info(f"Fetching LeetCode data for username: {username}")
             
             async with aiohttp.ClientSession() as session:
                 async with session.post(
                     self.graphql_endpoint,
                     json={"query": query, "variables": {"username": username}},
                     headers=headers,
-                    timeout=self.timeout
+                    timeout=aiohttp.ClientTimeout(total=10)
                 ) as resp:
+                    response_text = await resp.text()
+                    logger.info(f"LeetCode API response status: {resp.status}")
+                    
                     if resp.status != 200:
                         logger.warning(f"LeetCode API returned {resp.status} for user {username}")
+                        logger.debug(f"Response: {response_text[:500]}")
                         return None
                     
                     data = await resp.json()
+                    logger.debug(f"LeetCode API response: {str(data)[:500]}")
+                    
                     user_data = data.get("data", {})
                     if not user_data.get("matchedUser"):
                         logger.warning(f"LeetCode user {username} not found or no public data")
+                        logger.debug(f"Full response: {data}")
                         return None
+                        
+                    logger.info(f"Successfully fetched LeetCode data for {username}")
                     return user_data
         
         except asyncio.TimeoutError:
             logger.error(f"LeetCode fetch timeout for {username}")
             return None
+        except aiohttp.ClientError as e:
+            logger.error(f"LeetCode HTTP error for {username}: {str(e)}")
+            return None
         except Exception as e:
-            logger.error(f"LeetCode fetch error for {username}: {str(e)}")
+            logger.error(f"LeetCode fetch error for {username}: {str(e)}", exc_info=True)
             return None
     
     async def parse(self, raw_data: Dict) -> Dict:
