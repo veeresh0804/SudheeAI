@@ -238,10 +238,9 @@ const ProfileSetupPage: React.FC = () => {
 
   const canProceed = () => {
     switch (currentStep) {
-      case 1: return true; // LeetCode is now optional
-      case 2: return github.status === 'verified';
-      case 3: return true;
-      case 4: return true;
+      case 1: return github.status === 'verified'; // GitHub is required, LeetCode and LinkedIn optional
+      case 2: return true; // Resume is optional
+      case 3: return true; // Can always analyze with available data
       default: return true;
     }
   };
@@ -264,7 +263,7 @@ const ProfileSetupPage: React.FC = () => {
     return <Button onClick={onVerify} disabled={!platform.url}>Verify Link</Button>;
   };
 
-  const totalSteps = 5;
+  const totalSteps = 3;
 
   return (
     <div className="min-h-screen pt-20 pb-12">
@@ -293,59 +292,22 @@ const ProfileSetupPage: React.FC = () => {
         </div>
 
         <Card className="glass-card">
-          {/* Step 1: LeetCode */}
+          {/* Step 1: All Platform Links */}
           {currentStep === 1 && (
             <>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Code2 className="w-5 h-5 text-leetcode" /> Link Your LeetCode Profile (Optional)
+                  Link Your Coding Profiles
                 </CardTitle>
-                <CardDescription>We'll try to extract your stats, but you can skip this step if it fails</CardDescription>
+                <CardDescription>Connect your GitHub, LeetCode, and LinkedIn profiles</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
+                {/* GitHub */}
                 <div className="space-y-2">
-                  <Label>LeetCode Profile URL</Label>
-                  <div className="flex gap-2">
-                    <Input placeholder="https://leetcode.com/username" value={leetcode.url}
-                      onChange={(e) => setLeetcode({ ...leetcode, url: e.target.value, status: 'idle' })} />
-                    {renderVerificationButton(leetcode, verifyLeetCode)}
+                  <div className="flex items-center gap-2 mb-2">
+                    <Github className="w-5 h-5" />
+                    <Label className="text-base font-semibold">GitHub Profile (Required)</Label>
                   </div>
-                  {leetcode.status === 'error' && (
-                    <div className="space-y-2">
-                      <p className="text-sm text-destructive flex items-center gap-1">
-                        <AlertCircle className="w-4 h-4" /> {leetcode.error}
-                      </p>
-                      <p className="text-sm text-muted-foreground">LeetCode extraction is temporarily unavailable. You can skip this step.</p>
-                    </div>
-                  )}
-                </div>
-                {leetcode.status === 'verified' && leetcode.data && (
-                  <div className="p-4 bg-success/10 border border-success/20 rounded-lg space-y-2 animate-fade-in">
-                    <p className="font-medium text-success flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4" /> Profile verified!
-                    </p>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>Problems Solved: <span className="font-semibold">{leetcode.data.problemsSolved}</span></div>
-                      <div>Contest Rating: <span className="font-semibold">{leetcode.data.rating}</span></div>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </>
-          )}
-
-          {/* Step 2: GitHub */}
-          {currentStep === 2 && (
-            <>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Github className="w-5 h-5" /> Link Your GitHub Profile
-                </CardTitle>
-                <CardDescription>We'll analyze your repositories and activity</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>GitHub Profile URL</Label>
                   <div className="flex gap-2">
                     <Input placeholder="https://github.com/username" value={github.url}
                       onChange={(e) => setGithub({ ...github, url: e.target.value, status: 'idle' })} />
@@ -356,57 +318,80 @@ const ProfileSetupPage: React.FC = () => {
                       <AlertCircle className="w-4 h-4" /> {github.error}
                     </p>
                   )}
+                  {github.status === 'verified' && github.data && (
+                    <div className="p-3 bg-success/10 border border-success/20 rounded-lg animate-fade-in">
+                      <p className="font-medium text-success flex items-center gap-2 text-sm">
+                        <CheckCircle2 className="w-4 h-4" /> Profile verified!
+                      </p>
+                      <div className="grid grid-cols-2 gap-2 text-xs mt-2">
+                        <div>Repos: <span className="font-semibold">{github.data.publicRepos}</span></div>
+                        <div>Stars: <span className="font-semibold">{github.data.totalStars}</span></div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                {github.status === 'verified' && github.data && (
-                  <div className="p-4 bg-success/10 border border-success/20 rounded-lg space-y-2 animate-fade-in">
-                    <p className="font-medium text-success flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4" /> Profile verified!
-                    </p>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>Public Repos: <span className="font-semibold">{github.data.publicRepos}</span></div>
-                      <div>Total Stars: <span className="font-semibold">{github.data.totalStars}</span></div>
-                    </div>
-                    <div className="text-sm">
-                      Top Languages: <span className="font-semibold">{github.data.topLanguages.slice(0, 4).join(', ')}</span>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </>
-          )}
 
-          {/* Step 3: LinkedIn */}
-          {currentStep === 3 && (
-            <>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Linkedin className="w-5 h-5 text-linkedin" /> Link Your LinkedIn (Optional)
-                </CardTitle>
-                <CardDescription>Add your LinkedIn for certification verification</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+                <div className="border-t pt-6" />
+
+                {/* LeetCode */}
                 <div className="space-y-2">
-                  <Label>LinkedIn Profile URL</Label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Code2 className="w-5 h-5 text-leetcode" />
+                    <Label className="text-base font-semibold">LeetCode Profile (Optional)</Label>
+                  </div>
+                  <div className="flex gap-2">
+                    <Input placeholder="https://leetcode.com/username" value={leetcode.url}
+                      onChange={(e) => setLeetcode({ ...leetcode, url: e.target.value, status: 'idle' })} />
+                    {renderVerificationButton(leetcode, verifyLeetCode)}
+                  </div>
+                  {leetcode.status === 'error' && (
+                    <div className="space-y-1">
+                      <p className="text-sm text-destructive flex items-center gap-1">
+                        <AlertCircle className="w-4 h-4" /> {leetcode.error}
+                      </p>
+                      <p className="text-xs text-muted-foreground">LeetCode extraction is temporarily unavailable. You can skip this.</p>
+                    </div>
+                  )}
+                  {leetcode.status === 'verified' && leetcode.data && (
+                    <div className="p-3 bg-success/10 border border-success/20 rounded-lg animate-fade-in">
+                      <p className="font-medium text-success flex items-center gap-2 text-sm">
+                        <CheckCircle2 className="w-4 h-4" /> Profile verified!
+                      </p>
+                      <div className="grid grid-cols-2 gap-2 text-xs mt-2">
+                        <div>Solved: <span className="font-semibold">{leetcode.data.problemsSolved}</span></div>
+                        <div>Rating: <span className="font-semibold">{leetcode.data.rating}</span></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="border-t pt-6" />
+
+                {/* LinkedIn */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Linkedin className="w-5 h-5 text-linkedin" />
+                    <Label className="text-base font-semibold">LinkedIn Profile (Optional)</Label>
+                  </div>
                   <div className="flex gap-2">
                     <Input placeholder="https://linkedin.com/in/username" value={linkedin.url}
                       onChange={(e) => setLinkedin({ ...linkedin, url: e.target.value, status: 'idle' })} />
                     {renderVerificationButton(linkedin, verifyLinkedIn)}
                   </div>
+                  {linkedin.status === 'verified' && (
+                    <div className="p-3 bg-success/10 border border-success/20 rounded-lg animate-fade-in">
+                      <p className="font-medium text-success flex items-center gap-2 text-sm">
+                        <CheckCircle2 className="w-4 h-4" /> LinkedIn profile linked!
+                      </p>
+                    </div>
+                  )}
                 </div>
-                {linkedin.status === 'verified' && (
-                  <div className="p-4 bg-success/10 border border-success/20 rounded-lg animate-fade-in">
-                    <p className="font-medium text-success flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4" /> LinkedIn profile linked!
-                    </p>
-                  </div>
-                )}
-                <p className="text-sm text-muted-foreground">You can skip this step.</p>
               </CardContent>
             </>
           )}
 
-          {/* Step 4: Resume Upload */}
-          {currentStep === 4 && (
+          {/* Step 2: Resume Upload */}
+          {currentStep === 2 && (
             <>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -423,8 +408,8 @@ const ProfileSetupPage: React.FC = () => {
             </>
           )}
 
-          {/* Step 5: Analyze */}
-          {currentStep === 5 && (
+          {/* Step 3: Analyze */}
+          {currentStep === 3 && (
             <>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
