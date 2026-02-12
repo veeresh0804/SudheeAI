@@ -17,13 +17,19 @@ class Settings(BaseSettings):
     # AI Settings
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     
-    # CORS Settings
-    # In production, this should be restricted to your frontend domain
-    ALLOWED_ORIGINS: list = [
-        "http://localhost:5173",
-        "http://localhost:8080",
-        "http://localhost:3000",
-        "*" # Temporarily open for initial deploy, should be tightened
-    ]
+    # CORS Settings - Parse from environment variable (comma-separated)
+    @property
+    def ALLOWED_ORIGINS(self) -> list:
+        origins_env = os.getenv("ALLOWED_ORIGINS", "")
+        if origins_env:
+            # Split by comma and strip whitespace
+            return [origin.strip() for origin in origins_env.split(",")]
+        # Default origins for local development
+        return [
+            "http://localhost:5173",
+            "http://localhost:3000",
+            "http://localhost:8080",
+            "https://sudhee-ai.vercel.app",
+        ]
 
 settings = Settings()
